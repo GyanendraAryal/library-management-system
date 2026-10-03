@@ -16,17 +16,9 @@ class Author(models.Model):
         return self.author_name
 
 
-class Books(models.Model):
+class Genre(models.Model):
     id = models.BigAutoField(primary_key=True)
-    title = models.CharField(max_length=50, unique=True)
-    description = models.TextField()
-    isbn_number = models.CharField(max_length=50, unique=True, blank=False)
-    book_image = models.ImageField(upload_to="books_image/", null=True, blank=True)
-    user = models.ForeignKey(User, on_delete=models.PROTECT)
-    author = models.ForeignKey(Author, on_delete=models.PROTECT)
-    # genre=
-    quantity = models.IntegerField(default=10)
-    available_quantity = models.IntegerField(default=1)
+    title = models.CharField(max_length=50, unique=True, blank=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -34,9 +26,21 @@ class Books(models.Model):
         return self.title
 
 
-class Genre(models.Model):
+class Books(models.Model):
+    class Meta:
+        verbose_name = "Book"
+        verbose_name_plural = "Books"
+
     id = models.BigAutoField(primary_key=True)
-    title = models.CharField(max_length=50, unique=True, blank=False)
+    title = models.CharField(max_length=50, unique=True)
+    description = models.TextField()
+    isbn_number = models.CharField(max_length=50, unique=True, blank=False)
+    book_image = models.ImageField(upload_to="books_image/", null=True, blank=True)
+    user = models.ForeignKey(User, on_delete=models.PROTECT)
+    author = models.ForeignKey(Author, on_delete=models.PROTECT)
+    genre = models.ForeignKey(Genre, on_delete=models.PROTECT,null=True,blank=True)
+    quantity = models.IntegerField(default=10)
+    available_quantity = models.IntegerField(default=10)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

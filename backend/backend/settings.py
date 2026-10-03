@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "books",
     "users",
+    # "borrowing",
     "rest_framework",
     "rest_framework.authtoken",
 ]
@@ -141,5 +142,5 @@ MAILERS = {
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.TokenAuthentication",
-    ]
+    ],
 }
