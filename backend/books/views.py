@@ -10,6 +10,7 @@ from rest_framework import status
 # Books APIViews
 class BooksAPIView(APIView):
     permission_classes = [BookWriteByAdminOnly]
+
     def get(self, request, id=None):
         # For single book
         if id:
@@ -24,8 +25,15 @@ class BooksAPIView(APIView):
         # For all books
         else:
             books = Books.objects.all()
+            count = books.count()
             serializer = BooksSerializer(books, many=True)
-            return Response({"data": serializer.data}, status=status.HTTP_200_OK)
+            return Response(
+                {
+                    "total": count,
+                    "data": serializer.data,
+                },
+                status=status.HTTP_200_OK,
+            )
 
     def post(self, request):
         serializer = BooksSerializer(
@@ -72,6 +80,7 @@ class BooksAPIView(APIView):
 # Authors APIView
 class AuthorAPIView(APIView):
     permission_classes = [IsAuthenticated]
+
     def get(self, request, id=None):
         if id:
             try:

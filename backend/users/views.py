@@ -10,20 +10,20 @@ from .permissions import UserViewByAdminOnly, UserViewOnly
 
 
 # Create your views here.
-# Register User
+# Register User and get token
 class RegisterAPIView(APIView):
     def post(self, request):
-        # username = request.data.get("username")
-        # password = request.data.get("password")
-        # first_name = request.data.get("first_name")
-        # last_name = request.data.get("last_name")
-        # email = request.data.get("email")
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid(raise_exception=True):
-            serializer.save()
+            user = serializer.save()
+            token, _ = Token.objects.get_or_create(user=user)
             return Response(
-                {"message": "User created sucessfully.", "data": serializer.data},
-                status=status.HTTP_200_OK,
+                {
+                    "token": token.key,
+                    "message": "User created sucessfully.",
+                    "data": serializer.data,
+                },
+                status=status.HTTP_201_CREATED,
             )
         return Response(
             {

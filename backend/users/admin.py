@@ -5,6 +5,7 @@ from django.contrib.auth.admin import UserAdmin as UA
 
 # Register your models here.
 class UserAdmin(UA):
+    list_display = ("id","username","is_staff","is_superuser")
     fieldsets = (
         (None, {"fields": ("username", "password")}),
         (("Personal info"), {"fields": ("first_name", "last_name", "email", "phone")}),

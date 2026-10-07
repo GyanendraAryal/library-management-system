@@ -38,9 +38,9 @@ class Books(models.Model):
     book_image = models.ImageField(upload_to="books_image/", null=True, blank=True)
     user = models.ForeignKey(User, on_delete=models.PROTECT)
     author = models.ForeignKey(Author, on_delete=models.PROTECT)
-    genre = models.ForeignKey(Genre, on_delete=models.PROTECT,null=True,blank=True)
-    quantity = models.IntegerField(default=10)
-    available_quantity = models.IntegerField(default=10)
+    genre = models.ForeignKey(Genre, on_delete=models.PROTECT, null=True, blank=True)
+    quantity = models.PositiveIntegerField(default=10)
+    available_quantity = models.PositiveIntegerField(default=10)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
