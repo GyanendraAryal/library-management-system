@@ -7,21 +7,29 @@ from rest_framework import status
 from .serializers import RegisterSerializer, UserSerializer
 from .models import User
 from .permissions import UserViewByAdminOnly, UserViewOnly
+from rest_framework.permissions import AllowAny
 
 
-# Create your views here.
 # Register User and get token
 class RegisterAPIView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
-        if serializer.is_valid(raise_exception=True):
+        if serializer.is_valid():
             user = serializer.save()
             token, _ = Token.objects.get_or_create(user=user)
             return Response(
                 {
                     "token": token.key,
                     "message": "User created sucessfully.",
-                    "data": serializer.data,
+                    "data": {
+                        "id": user.id,
+                        "username": user.username,
+                        "email": user.email,
+                        "first_name": user.first_name,
+                        "last_name": user.last_name,
+                    },
                 },
                 status=status.HTTP_201_CREATED,
             )
@@ -37,11 +45,10 @@ class LoginAPIView(APIView):
     def post(self, request):
         username = request.data.get("username")
         password = request.data.get("password")
-        if username == "" and password == "":
+        if username == "" or password == "":
             return Response(
                 {"error": "Login failed, All fields are required!!"}, status=400
             )
-        print(username, password)
         user = authenticate(username=username, password=password)
         if user:
             # get_or_create:- creates token if not already created and return token if already exists and returns tuple with token object and a flag so have to use this [token,_].
@@ -51,6 +58,7 @@ class LoginAPIView(APIView):
                     "message": "Login successful",
                     "username": user.username,
                     "token": token.key,
+                    "user":user
                 },
                 status=200,
             )
