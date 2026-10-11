@@ -9,6 +9,7 @@ class BorrowRequest(models.Model):
     REQUEST_STATUS = [
         ("P", "Pending"),
         ("A", "Approved"),
+        ("SR", "Submitted For Return"),
         ("R", "Rejected"),
         ("C", "Cancelled"),
     ]
@@ -26,7 +27,7 @@ class BorrowRequest(models.Model):
             MaxValueValidator(30),
         ],
     )
-    status = models.CharField(max_length=1, choices=REQUEST_STATUS, default="P")
+    status = models.CharField(max_length=2, choices=REQUEST_STATUS, default="P")
     approved_days = models.IntegerField(null=True, blank=True)
     requested_at = models.DateTimeField(auto_now_add=True)
     approved_at = models.DateTimeField(null=True, blank=True)
@@ -41,7 +42,7 @@ class BorrowRequest(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.book.title}"
 
-    
+
 # class BorrowingHistory(models.Model):
 #     id = models.BigAutoField(primary_key=True)
 #     user = models.ForeignKey(
@@ -50,4 +51,4 @@ class BorrowRequest(models.Model):
 #     book = models.ForeignKey(
 #         Books, on_delete=models.CASCADE, related_name="borrow-history"
 #     )
-    # borrowed_days
+# borrowed_days

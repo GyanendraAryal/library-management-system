@@ -1,3 +1,4 @@
+import logging
 from django.db import transaction
 from rest_framework.response import Response
 from django.shortcuts import get_object_or_404
@@ -7,12 +8,15 @@ from .models import BorrowRequest
 from .permissions import (
     BorrowRequestAdminOnly,
     UserBorrowRequestOnly,
-    UserOnlyBorrowingHistory,
+    UserOnlyReturnRequest,
     AdminOnlyBorrowingHistory,
 )
 from books.models import Books
+from books.serializers import BooksSerializer
 from .serializers import BorrowRequestSerializer
 from django.utils import timezone
+
+logger = logging.getLogger(__name__)
 
 
 # Create your views here.
@@ -59,6 +63,11 @@ class AdminOnlyBorrowingAPIView(APIView):
         try:
             with transaction.atomic():
                 book = Books.objects.select_for_update().get(id=borrowing.book.id)
+                if book.available_quantity <= 0:
+                    return Response(
+                        {"message": "This book ran out of stock"},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
                 book.available_quantity -= 1
                 book.save()
                 borrowing.status = "A"
@@ -71,6 +80,7 @@ class AdminOnlyBorrowingAPIView(APIView):
                     status=status.HTTP_200_OK,
                 )
         except Exception as e:
+            logger.error(f"Error processing borrow approval for request {id} {str(e)}")
             return Response(
                 {"message": "Error processing request"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -97,16 +107,134 @@ class UserBorrowingRequestAPIView(APIView):
             status="P",
         )
         return Response(
-            {"message": "Borrow request created successfully","data":serializer.data},
+            {"message": "Borrow request created successfully", "data": serializer.data},
             status=status.HTTP_200_OK,
         )
 
+    def patch(self, request, id=None):
+        if not id:
+            return Response(
+                {"message": "Id is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        borrow_request = get_object_or_404(BorrowRequest, id=id)
+        serializer = BorrowRequestSerializer(
+            borrow_request, data=request.data, partial=True
+        )
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(
+            {"message": "Request updated successfully"}, status=status.HTTP_200_OK
+        )
 
-class BorrowingHistoryAPIView(APIView):
+
+class AdminBorrowingHistoryAPIView(APIView):
     permission_classes = [AdminOnlyBorrowingHistory]
 
-    def get(self, request, id=None):
-        if id:
-            user = request.user
-            books = Books.objects.filter(user=user)
-            books = books.filter("returned_date", books.returned_date)
+    def get(self, request):
+        history = BorrowRequest.objects.filter(status="R")
+        serializer = BorrowRequestSerializer(history, many=True)
+        return Response({"data": serializer.data})
+
+
+# Return request
+class UserReturnRequestAPIView(APIView):
+    permission_classes = [UserOnlyReturnRequest]
+
+    def post(self, request, id=None):
+        if not id:
+            return Response(
+                {"message": "Id is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        borrow_request = get_object_or_404(BorrowRequest, id=id)
+        if borrow_request.status != "A":
+            return Response(
+                {
+                    "message": "You can only request a return for book you currently hold"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        borrow_request.status = "SR"
+        borrow_request.save()
+        serializer = BorrowRequestSerializer(borrow_request)
+        return Response(
+            {
+                "message": "Return request submitted successfully",
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def delete(self, request, id=None):
+        if not id:
+            return Response(
+                {"message": "Id is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        user = request.user
+        if user.is_staff or user.is_superuser:
+            borrow_request = get_object_or_404(BorrowRequest, id=id)
+            borrow_request.delete()
+            return Response(
+                {"message": "Return request deleted successfully"},
+                status=status.HTTP_200_OK,
+            )
+        borrow_request = get_object_or_404(BorrowRequest, id=id, user=request.user)
+        if borrow_request.status != "SR":
+            return Response(
+                {
+                    "message": "You can only cancel return requests that are currently pending admin review."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        borrow_request.status = "A"
+        borrow_request.save()
+        serializer = BorrowRequestSerializer(borrow_request)
+        return Response(
+            {
+                "message": "Return request canceled successfully",
+                "data": serializer.data,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    def patch(self, request, id=None):
+        if not id:
+            return Response(
+                {"message": "Id is required"}, status=status.HTTP_400_BAD_REQUEST
+            )
+        if not (request.user.is_staff or request.user.is_superuser):
+            return Response(
+                {"message": "You do not have permission to perform this action."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
+        borrow_request = get_object_or_404(BorrowRequest, id=id)
+        if borrow_request.status != "SR":
+            return Response(
+                {
+                    "message": "This book is not currently pending a return validation review."
+                },
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            with transaction.atomic():
+                book = Books.objects.select_for_update().get(id=borrow_request.book.id)
+                book.available_quantity += 1
+                book.save()
+                borrow_request.status = "R"
+                borrow_request.save()
+                serializer = BorrowRequestSerializer(borrow_request)
+                return Response(
+                    {
+                        "message": "Return request accepted successfully",
+                        "data": serializer.data,
+                    },
+                    status=status.HTTP_200_OK,
+                )
+        except Exception as e:
+            logger.exception(
+                f"Database failure during return execution on ID {id}: {e}"
+            )
+            return Response(
+                {"message": "Error processing the backend return request"},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
