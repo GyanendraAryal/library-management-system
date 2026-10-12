@@ -7,7 +7,7 @@ from rest_framework import status
 from .serializers import RegisterSerializer, UserSerializer
 from .models import User
 from .permissions import UserViewByAdminOnly, UserViewOnly
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 
 # Register User and get token
@@ -58,11 +58,29 @@ class LoginAPIView(APIView):
                     "message": "Login successful",
                     "username": user.username,
                     "token": token.key,
-                    "user":user
+                    "user": user,
                 },
                 status=200,
             )
         return Response({"error": "Invalid Credentials,Login failed"}, status=401)
+
+
+class LogoutAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        try:
+            user.auth_token.delete()
+            return Response(
+                {"message": "Logged out successfully. Token deleted"},
+                status=status.HTTP_200_OK,
+            )
+        except Exception as e:
+            return Response(
+                {"message": "Something went wrong or token does not exist."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
 
 class UserListAPIView(APIView):
