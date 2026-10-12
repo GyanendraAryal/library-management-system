@@ -133,12 +133,25 @@ class AdminBorrowingHistoryAPIView(APIView):
     def get(self, request):
         history = BorrowRequest.objects.filter(status="R")
         serializer = BorrowRequestSerializer(history, many=True)
-        return Response({"data": serializer.data})
+        return Response(
+            {"data": serializer.data},
+            status=status.HTTP_200_OK,
+        )
 
 
 # Return request
 class UserReturnRequestAPIView(APIView):
     permission_classes = [UserOnlyReturnRequest]
+
+    def get(self, request):
+        user = request.user
+        return_request = BorrowRequest.objects.filter(user=user, status="SR")
+        serializer = BorrowRequestSerializer(return_request, many=True)
+        count = return_request.count()
+        return Response(
+            {"count": count, "data": serializer.data},
+            status=status.HTTP_200_OK,
+        )
 
     def post(self, request, id=None):
         if not id:
@@ -146,6 +159,10 @@ class UserReturnRequestAPIView(APIView):
                 {"message": "Id is required"}, status=status.HTTP_400_BAD_REQUEST
             )
         borrow_request = get_object_or_404(BorrowRequest, id=id)
+        if borrow_request.count() <= 0:
+            return Response(
+                {"message": "No request found"}, status=status.HTTP_204_NO_CONTENT
+            )
         if borrow_request.status != "A":
             return Response(
                 {
@@ -208,6 +225,10 @@ class UserReturnRequestAPIView(APIView):
             )
 
         borrow_request = get_object_or_404(BorrowRequest, id=id)
+        if borrow_request.count() <= 0:
+            return Response(
+                {"message": "No request found"}, status=status.HTTP_204_NO_CONTENT
+            )
         if borrow_request.status != "SR":
             return Response(
                 {

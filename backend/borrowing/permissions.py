@@ -49,6 +49,6 @@ class UserOnlyReturnRequest(BasePermission):
             return False
         if request.method == "PATCH":
             return user.is_staff
-        if request.method in ["POST", "DELETE"]:
+        if request.method in ["GET", "POST", "DELETE"]:
             return True
         return False

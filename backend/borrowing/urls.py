@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     AdminOnlyBorrowingAPIView,
     UserBorrowingRequestAPIView,
-    UserBorrowingRequestAPIView,
+    UserReturnRequestAPIView,
 )
 
 urlpatterns = [
@@ -15,5 +15,7 @@ urlpatterns = [
     path("user/", UserBorrowingRequestAPIView.as_view(), name="user_borrowing"),
     path("history/", UserBorrowingRequestAPIView.as_view(), name="user_borrowing"),
     # returning request
-    path("return/", UserBorrowingRequestAPIView.as_view(), name="return_book"),
+    path("return/", UserReturnRequestAPIView.as_view(), name="return_book"),
+    # for post/patch/delete
+    path("return/<int:id>/", UserReturnRequestAPIView.as_view(), name="return_book"),
 ]
