@@ -31,6 +31,7 @@ class BorrowRequest(models.Model):
     approved_days = models.IntegerField(null=True, blank=True)
     requested_at = models.DateTimeField(auto_now_add=True)
     approved_at = models.DateTimeField(null=True, blank=True)
+    returned_at = models.DateTimeField(blank=True, null=True)
     approved_by = models.ForeignKey(
         User,
         on_delete=models.PROTECT,
