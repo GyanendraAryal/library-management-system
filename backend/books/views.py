@@ -5,11 +5,17 @@ from .models import Books, Author
 from rest_framework.permissions import IsAuthenticated
 from .serializers import BooksSerializer, AuthorSerializer
 from rest_framework import status
+from django_filters.rest_framework import DjangoFilterBackend
+from .filters import BookFilter
+from rest_framework.filters import SearchFilter
 
 
 # Books APIViews
 class BooksAPIView(APIView):
     permission_classes = [BookWriteByAdminOnly]
+    filterset_class = BookFilter
+    # filter_backends = [DjangoFilterBackend, SearchFilter]
+    search_fields = ["title", "author__author_name", "genre__title"]
 
     def get(self, request, id=None):
         # For single book
@@ -25,8 +31,14 @@ class BooksAPIView(APIView):
         # For all books
         else:
             books = Books.objects.all()
-            count = books.count()
-            serializer = BooksSerializer(books, many=True)
+            # Manual filtering through api
+            backend = DjangoFilterBackend()
+            filtered_books = backend.filter_queryset(request, books, self)
+            # Searching
+            search_backend = SearchFilter()
+            filtered_books = search_backend.filter_queryset(request, books, self)
+            count = filtered_books.count()
+            serializer = BooksSerializer(filtered_books, many=True)
             return Response(
                 {
                     "total": count,
