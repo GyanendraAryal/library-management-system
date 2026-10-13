@@ -8,13 +8,15 @@ from rest_framework import status
 from django_filters.rest_framework import DjangoFilterBackend
 from .filters import BookFilter
 from rest_framework.filters import SearchFilter
+from rest_framework.pagination import PageNumberPagination
+from .pagination import BookPagination
 
 
 # Books APIViews
 class BooksAPIView(APIView):
+    pagination_class = BookPagination
     permission_classes = [BookWriteByAdminOnly]
     filterset_class = BookFilter
-    # filter_backends = [DjangoFilterBackend, SearchFilter]
     search_fields = ["title", "author__author_name", "genre__title"]
 
     def get(self, request, id=None):
@@ -37,6 +39,13 @@ class BooksAPIView(APIView):
             # Searching
             search_backend = SearchFilter()
             filtered_books = search_backend.filter_queryset(request, books, self)
+
+            # Pagination
+            paginator = self.pagination_class()
+            page = paginator.paginate_queryset(books, request, view=self)
+            if page is not None:
+                serializer = BooksSerializer(page, many=True)
+                return paginator.get_paginated_response(serializer.data)
             count = filtered_books.count()
             serializer = BooksSerializer(filtered_books, many=True)
             return Response(

@@ -4,7 +4,7 @@ from books.models import Books
 
 
 class BookFilter(filters.FilterSet):
-    title = filters.CharFilter(field_name="title", lookup_expr="icontans")
+    title = filters.CharFilter(field_name="title", lookup_expr="icontains")
     author = filters.CharFilter(
         field_name="author__author_name", lookup_expr="icontains"
     )

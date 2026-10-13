@@ -15,10 +15,10 @@ class BorrowRequest(models.Model):
     ]
     id = models.BigAutoField(primary_key=True)
     user = models.ForeignKey(
-        User, on_delete=models.PROTECT, related_name="borrow_requests"
+        User, on_delete=models.CASCADE, related_name="borrow_requests"
     )
     book = models.ForeignKey(
-        Books, on_delete=models.PROTECT, related_name="borrow_requests"
+        Books, on_delete=models.CASCADE, related_name="borrow_requests"
     )
     requested_days = models.IntegerField(
         default=15,
@@ -34,7 +34,7 @@ class BorrowRequest(models.Model):
     returned_at = models.DateTimeField(blank=True, null=True)
     approved_by = models.ForeignKey(
         User,
-        on_delete=models.PROTECT,
+        on_delete=models.CASCADE,
         null=True,
         blank=True,
         related_name="approved_borrow_requests",
