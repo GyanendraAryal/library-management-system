@@ -12,9 +12,10 @@ from .permissions import (
     AdminOnlyBorrowingHistory,
 )
 from books.models import Books
-from books.serializers import BooksSerializer
+from django_filters.rest_framework import DjangoFilterBackend
 from .serializers import BorrowRequestSerializer
 from django.utils import timezone
+from .pagination import BorrowingPagination
 
 logger = logging.getLogger(__name__)
 
@@ -22,9 +23,20 @@ logger = logging.getLogger(__name__)
 # Create your views here.
 class AdminOnlyBorrowingAPIView(APIView):
     permission_classes = [BorrowRequestAdminOnly]
+    filter_backends = [DjangoFilterBackend]
+    filterset_fields = ["user", "book", "status", "approved_by"]
 
     def get(self, request):
-        borrowings = BorrowRequest.objects.all()
+        borrowings = BorrowRequest.objects.all().order_by("id")
+        # filtering
+        for backend in self.filter_backends:
+            borrowings = backend().filter_queryset(request,borrowings,view=self)
+        # using pagination class directly-easy syntax
+        paginator = BorrowingPagination()
+        page = paginator.paginate_queryset(borrowings, request, view=self)
+        if page is not None:
+            serializer = BorrowRequestSerializer(page, many=True)
+            return paginator.get_paginated_response(serializer.data)
         count = borrowings.count()
         serializer = BorrowRequestSerializer(borrowings, many=True)
         return Response(

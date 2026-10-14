@@ -14,7 +14,6 @@ from .pagination import BookPagination
 
 # Books APIViews
 class BooksAPIView(APIView):
-    pagination_class = BookPagination
     permission_classes = [BookWriteByAdminOnly]
     filterset_class = BookFilter
     search_fields = ["title", "author__author_name", "genre__title"]
@@ -32,7 +31,7 @@ class BooksAPIView(APIView):
                 )
         # For all books
         else:
-            books = Books.objects.all()
+            books = Books.objects.all().order_by("id")
             # Manual filtering through api
             backend = DjangoFilterBackend()
             filtered_books = backend.filter_queryset(request, books, self)
@@ -41,7 +40,7 @@ class BooksAPIView(APIView):
             filtered_books = search_backend.filter_queryset(request, books, self)
 
             # Pagination
-            paginator = self.pagination_class()
+            paginator = BookPagination()
             page = paginator.paginate_queryset(books, request, view=self)
             if page is not None:
                 serializer = BooksSerializer(page, many=True)
