@@ -13,6 +13,16 @@ class BorrowRequestAdmin(admin.ModelAdmin):
         "status",
         "approved_days",
         "approved_by",
+        "requested_at",
+        "returned_at",
+    )
+
+    list_filter = ("status", "requested_at")
+    search_fields = ("user__username", "book__title")
+    readonly_fields = (
+        "requested_at",
+        "approved_at",
+        "returned_at",
     )
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
