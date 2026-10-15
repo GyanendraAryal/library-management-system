@@ -193,3 +193,5 @@ sketch
 CODE_REVIEW.md
 Project Requirement.pdf
 Comparison.pdf
+__pycache__/
+*.py[cod]
