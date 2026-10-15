@@ -1,16 +1,25 @@
+# Permissions for the books application.
+# BookWriteByAdminOnly:
+#   - GET  — any authenticated user
+#   - POST, PUT, PATCH, DELETE — staff/admin only
+
+
 from rest_framework.permissions import BasePermission
 
-
 class BookWriteByAdminOnly(BasePermission):
+
     def has_permission(self, request, view):
         user = request.user
-        # User must be logged in
+
+        # Unauthenticated requests are denied
         if not user.is_authenticated:
             return False
-        # Members and admin both can view
+
+        # All authenticated members can view the book catalogue
         if request.method == "GET":
             return True
-        # Only admin and staffs are allowed to create,update and delete
-        if request.method in ["POST", "PUT", "DELETE"]:
+        # Only admin/staff are allowed to perform
+        if request.method in ["POST", "PUT", "PATCH", "DELETE"]:
             return user.is_staff
+
         return False

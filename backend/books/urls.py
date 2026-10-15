@@ -2,13 +2,12 @@ from django.urls import path
 from .views import BooksAPIView, AuthorAPIView
 
 urlpatterns = [
-    # GET all books and POST books
+    # Book list (GET all, POST create)
     path("", BooksAPIView.as_view(), name="books"),
-    # GET, PUT, DELETE book
+    # Book detail (GET one, PUT update, DELETE remove)
     path("<int:id>/", BooksAPIView.as_view(), name="book-details"),
 
-    # GET all authors and POST authors
+    # Author list (GET all, POST create)
     path("authors/", AuthorAPIView.as_view(), name="authors"),
-    # GET, PUT, DELETE authors
-    path("<int:id>/", AuthorAPIView.as_view(), name="author-details"),
+    path("authors/<int:id>/", AuthorAPIView.as_view(), name="author-details"),
 ]
