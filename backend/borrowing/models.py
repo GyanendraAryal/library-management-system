@@ -4,22 +4,33 @@ from users.models import User
 from books.models import Books
 
 
-# Create your models here.
 class BorrowRequest(models.Model):
     REQUEST_STATUS = [
-        ("P", "Pending"),
-        ("A", "Approved"),
+        ("P",  "Pending"),
+        ("A",  "Approved"),
         ("SR", "Submitted For Return"),
-        ("R", "Rejected"),
-        ("C", "Cancelled"),
+        ("R",  "Rejected"),
+        ("C",  "Cancelled"),
+        ("RT", "Returned"),
     ]
+
     id = models.BigAutoField(primary_key=True)
+
+    # The member who submitted the borrow request
     user = models.ForeignKey(
-        User, on_delete=models.CASCADE, related_name="borrow_requests"
+        User,
+        on_delete=models.PROTECT,
+        related_name="borrow_requests",
     )
+
+    # The book being requested
     book = models.ForeignKey(
-        Books, on_delete=models.CASCADE, related_name="borrow_requests"
+        Books,
+        on_delete=models.PROTECT,
+        related_name="borrow_requests",
     )
+
+    # How many days the member wants to borrow the book (1–30 days)
     requested_days = models.IntegerField(
         default=15,
         validators=[
@@ -27,29 +38,30 @@ class BorrowRequest(models.Model):
             MaxValueValidator(30),
         ],
     )
-    status = models.CharField(max_length=2, choices=REQUEST_STATUS, default="P")
+
+    # Current state in the borrowing lifecycle
+    status = models.CharField(
+        max_length=2,
+        choices=REQUEST_STATUS,
+        default="P",
+    )
+
+    # Number of days the admin actually approved (may differ from requested_days)
     approved_days = models.IntegerField(null=True, blank=True)
+
+    # Timestamps for each stage of the lifecycle
     requested_at = models.DateTimeField(auto_now_add=True)
     approved_at = models.DateTimeField(null=True, blank=True)
-    returned_at = models.DateTimeField(blank=True, null=True)
+    returned_at = models.DateTimeField(null=True, blank=True)
+
+    # Which staff member approved this request (NULL if not yet approved)
     approved_by = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name="approved_borrow_requests",
     )
 
     def __str__(self):
-        return f"{self.user.username} - {self.book.title}"
-
-
-# class BorrowingHistory(models.Model):
-#     id = models.BigAutoField(primary_key=True)
-#     user = models.ForeignKey(
-#         User, on_delete=models.CASCADE, related_name="borrow-history"
-#     )
-#     book = models.ForeignKey(
-#         Books, on_delete=models.CASCADE, related_name="borrow-history"
-#     )
-# borrowed_days
+        return f"{self.user.username} — {self.book.title} [{self.get_status_display()}]"
