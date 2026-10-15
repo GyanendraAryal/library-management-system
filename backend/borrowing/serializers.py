@@ -1,19 +1,23 @@
 from rest_framework import serializers
 from rest_framework.serializers import ModelSerializer
 from .models import BorrowRequest
-from users.models import User
 from books.models import Books
-from users.serializers import UserSerializer
+from users.serializers import PublicUserSerializer
 from books.serializers import BooksSerializer
 
 
 class BorrowRequestSerializer(ModelSerializer):
-    user = UserSerializer(read_only=True)
+    # Nested read-only representations
+    # Use PublicUserSerializer to avoid leaking sensitive user fields
+    user = PublicUserSerializer(read_only=True)
     book = BooksSerializer(read_only=True)
+    approved_by = PublicUserSerializer(read_only=True)
+
+    # Write-only field for creating a borrow request (client sends book_id)
     book_id = serializers.PrimaryKeyRelatedField(
         queryset=Books.objects.all(), source="book", write_only=True
     )
-    approved_by = UserSerializer(read_only=True)
+
     class Meta:
         model = BorrowRequest
         fields = [
@@ -26,6 +30,7 @@ class BorrowRequestSerializer(ModelSerializer):
             "approved_days",
             "requested_at",
             "approved_at",
+            "returned_at",
             "approved_by",
         ]
         read_only_fields = [
@@ -34,11 +39,14 @@ class BorrowRequestSerializer(ModelSerializer):
             "status",
             "requested_at",
             "approved_at",
+            "returned_at",
             "approved_by",
         ]
 
     def validate(self, attrs):
-        book = attrs["book"]
-        if book.available_quantity <= 0:
-            raise serializers.ValidationError("This book is currently unavailable.")
+        book = attrs.get("book")
+        if book and book.available_quantity <= 0:
+            raise serializers.ValidationError(
+                {"book_id": "This book is currently unavailable (out of stock)."}
+            )
         return attrs

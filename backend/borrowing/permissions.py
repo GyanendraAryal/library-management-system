@@ -17,22 +17,12 @@ class UserBorrowRequestOnly(BasePermission):
         if not user.is_authenticated:
             return False
         if request.method in ["GET", "POST", "PATCH"]:
-            return user
-        return False
-
-
-class UserOnlyBorrowingHistory(BasePermission):
-    def has_object_permission(self, request, view, obj):
-        user = request.user
-        if not user.is_authenticated:
-            return False
-        if request.method == "GET":
-            return obj.user == request.user
+            return True
         return False
 
 
 class AdminOnlyBorrowingHistory(BasePermission):
-    def has_object_permission(self, request, view, obj):
+    def has_permission(self, request, view):
         user = request.user
         if not user.is_authenticated:
             return False
@@ -41,14 +31,15 @@ class AdminOnlyBorrowingHistory(BasePermission):
         return False
 
 
-# User return request
 class UserOnlyReturnRequest(BasePermission):
     def has_permission(self, request, view):
         user = request.user
         if not user.is_authenticated:
             return False
+        # Admins confirm returns via PATCH
         if request.method == "PATCH":
             return user.is_staff
+        # Members can view, submit, and cancel their own return requests
         if request.method in ["GET", "POST", "DELETE"]:
             return True
         return False
