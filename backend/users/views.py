@@ -19,6 +19,7 @@ from .models import User
 from .permissions import UserViewByAdminOnly, UserViewOnly
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from drf_spectacular.utils import extend_schema
+from rest_framework.parsers import MultiPartParser, FormParser
 
 
 class RegisterAPIView(APIView):
@@ -137,6 +138,7 @@ class UserListAPIView(APIView):
 
 class MyProfileListAPIView(APIView):
     permission_classes = [UserViewOnly]
+    parser_classes = [MultiPartParser, FormParser]
 
     def get(self, request):
         # request.user is set by TokenAuthentication middleware
@@ -144,12 +146,12 @@ class MyProfileListAPIView(APIView):
         return Response({"data": serializer.data}, status=status.HTTP_200_OK)
 
     def patch(self, request):
-        serializer = UserSerializer(user=request.user, data=request.data, partial=True)
+        serializer = UserSerializer(
+            instance=request.user, data=request.data, partial=True
+        )
         serializer.is_valid(raise_exception=True)
         serializer.save()
         return Response(
             {"message": "Profile updated successfully.", "data": serializer.data},
             status=status.HTTP_200_OK,
         )
-
-    
