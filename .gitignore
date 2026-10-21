@@ -22,9 +22,9 @@ media
 
 # C extensions
 *.so
-
+Frontend.txt
 .env
-
+Setup.pdf
 # Distribution / packaging
 .Python
 build/
