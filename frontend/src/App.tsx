@@ -1,122 +1,90 @@
-import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import { useEffect } from "react";
+import { createBrowserRouter, RouterProvider } from "react-router";
+import Layout from "./components/layout/Home";
+import {
+  GuestRoute,
+  ProtectedRoute,
+  StaffRoute,
+} from "./components/ProtectedRoute";
+import HomePage from "./pages/HomePage";
+import Login from "./pages/Login";
+import AboutPage from "./pages/AboutPage";
+import CataloguePage from "./pages/CataloguePage";
+import BookDetailPage from "./pages/BookDetailPage";
+import MyBorrowingsPage from "./pages/MyBorrowingsPage";
+import ProfilePage from "./pages/ProfilePage";
+import ManageBooksPage from "./pages/admin/ManageBooksPage";
+import ManageAuthorsPage from "./pages/admin/ManageAuthorsPage";
+import AdminRequestsPage from "./pages/admin/AdminRequestsPage";
+import AdminHistoryPage from "./pages/admin/AdminHistoryPage";
+import AdminUsersPage from "./pages/admin/AdminUsersPage";
+import NotFoundPage from "./pages/NotFoundPage";
+import { useAppDispatch, useAuth } from "./hooks/useAuth";
+import { authService } from "./services/authService";
+import { clearCredentials, updateUser } from "./store/authSlice";
+import { isApiError } from "./utils/errors";
 
-function App() {
-  const [count, setCount] = useState(0)
+const router = createBrowserRouter([
+  {
+    path: "/",
+    Component: Layout,
+    children: [
+      { index: true, Component: HomePage },
+      { path: "about", Component: AboutPage },
+      {
+        Component: GuestRoute,
+        children: [{ path: "login", Component: Login }],
+      },
+      {
+        Component: ProtectedRoute,
+        children: [
+          { path: "catalogue", Component: CataloguePage },
+          { path: "books/:id", Component: BookDetailPage },
+          { path: "borrowings", Component: MyBorrowingsPage },
+          { path: "returns", Component: MyBorrowingsPage },
+          { path: "profile", Component: ProfilePage },
+          { path: "admin/authors", Component: ManageAuthorsPage },
+        ],
+      },
+      {
+        Component: StaffRoute,
+        children: [
+          { path: "admin/books", Component: ManageBooksPage },
+          { path: "admin/requests", Component: AdminRequestsPage },
+          { path: "admin/history", Component: AdminHistoryPage },
+          { path: "admin/users", Component: AdminUsersPage },
+        ],
+      },
+      { path: "*", Component: NotFoundPage },
+    ],
+  },
+]);
 
-  return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.tsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+function AuthBootstrap() {
+  const { token } = useAuth();
+  const dispatch = useAppDispatch();
 
-      <div className="ticks"></div>
+  useEffect(() => {
+    if (!token) return;
+    let cancelled = false;
+    authService
+      .getProfile()
+      .then((user) => {
+        if (!cancelled) dispatch(updateUser(user));
+      })
+      .catch((error) => {
+        if (!cancelled && isApiError(error) && error.status === 401) {
+          dispatch(clearCredentials());
+        }
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [token, dispatch]);
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
-  )
+  return <RouterProvider router={router} />;
 }
 
-export default App
+export default function App() {
+  return <AuthBootstrap />;
+}
