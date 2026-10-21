@@ -1,8 +1,7 @@
-from .permissions import BookWriteByAdminOnly
+from .permissions import BookWriteByAdminOnly, AuthorWriteByAdminOnly
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .models import Books, Author
-from rest_framework.permissions import IsAuthenticated
 from .serializers import BooksSerializer, AuthorSerializer
 from rest_framework import status
 from django_filters.rest_framework import DjangoFilterBackend
@@ -113,7 +112,7 @@ class BooksAPIView(APIView):
 
 @extend_schema(tags=["Authors"])
 class AuthorAPIView(APIView):
-    permission_classes = [IsAuthenticated]
+    permission_classes = [AuthorWriteByAdminOnly]
 
     def get(self, request, id=None):
         if id:

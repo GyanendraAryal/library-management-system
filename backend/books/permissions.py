@@ -6,6 +6,7 @@
 
 from rest_framework.permissions import BasePermission
 
+
 class BookWriteByAdminOnly(BasePermission):
 
     def has_permission(self, request, view):
@@ -22,4 +23,14 @@ class BookWriteByAdminOnly(BasePermission):
         if request.method in ["POST", "PUT", "PATCH", "DELETE"]:
             return user.is_staff
 
+        return False
+
+
+class AuthorWriteByAdminOnly(BasePermission):
+    def has_permission(self, request, view):
+        user = request.user
+        if not user.is_authenticated:
+            return False
+        if request.method in ["GET", "POST", "PUT", "PATCH", "DELETE"]:
+            return user.is_staff
         return False
