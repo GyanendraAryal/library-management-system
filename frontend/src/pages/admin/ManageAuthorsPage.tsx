@@ -1,10 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
+import { Search } from "lucide-react";
 import { booksService } from "../../services/booksService";
 import type { Author } from "../../types";
 import Modal from "../../components/ui/Modal";
 import ConfirmDialog from "../../components/ui/ConfirmDialog";
 import Alert from "../../components/ui/Alert";
+import { useAuth } from "../../hooks/useAuth";
 import { isApiError } from "../../utils/errors";
 
 type AuthorForm = {
@@ -13,7 +15,9 @@ type AuthorForm = {
 };
 
 export default function ManageAuthorsPage() {
+  const { isStaff } = useAuth();
   const [authors, setAuthors] = useState<Author[]>([]);
+  const [search, setSearch] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [editing, setEditing] = useState<Author | null>(null);
@@ -33,88 +37,122 @@ export default function ManageAuthorsPage() {
     void load();
   }, []);
 
+  const visibleAuthors = useMemo(() => {
+    const query = search.trim().toLocaleLowerCase();
+    if (!query) return authors;
+    return authors.filter((author) =>
+      `${author.author_name} ${author.authors_biography ?? ""}`
+        .toLocaleLowerCase()
+        .includes(query),
+    );
+  }, [authors, search]);
+
   return (
     <main className="mx-auto max-w-[1080px] px-6 py-12 max-md:px-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-serif text-3xl font-semibold">Authors</h1>
-        <button
-          type="button"
-          onClick={() => setCreating(true)}
-          className="h-10 rounded-lg bg-brand px-4 text-sm font-medium text-white hover:bg-brand-hover"
-        >
-          Add author
-        </button>
+        {isStaff ? (
+          <button
+            type="button"
+            onClick={() => setCreating(true)}
+            className="h-10 rounded-lg bg-brand px-4 text-sm font-medium text-white hover:bg-brand-hover"
+          >
+            Add author
+          </button>
+        ) : null}
       </div>
-      <p className="mt-2 text-sm text-ink-muted">
-        Authors cannot be deleted if they still have books (the API protects those records).
-      </p>
+      {isStaff ? (
+        <p className="mt-2 text-sm text-ink-muted">
+          Authors cannot be deleted if they still have books (the API protects those records).
+        </p>
+      ) : null}
       <div className="mt-4 space-y-3">
         {error ? <Alert tone="error">{error}</Alert> : null}
         {success ? <Alert tone="success">{success}</Alert> : null}
       </div>
 
+      <label className="mt-6 flex h-10 max-w-xl items-center gap-2.5 rounded-lg border border-line bg-surface px-3.5 text-ink-muted focus-within:border-brand">
+        <Search size={16} aria-hidden="true" />
+        <input
+          type="search"
+          value={search}
+          onChange={(event) => setSearch(event.target.value)}
+          placeholder="Search authors by name or biography"
+          aria-label="Search authors by name or biography"
+          className="min-w-0 flex-1 bg-transparent text-ink outline-none placeholder:text-ink-muted"
+        />
+      </label>
+
       {authors.length === 0 ? (
         <p className="mt-8 text-sm text-ink-muted">No authors yet.</p>
+      ) : visibleAuthors.length === 0 ? (
+        <p className="mt-8 text-sm text-ink-muted">No authors match your search.</p>
       ) : (
         <ul className="mt-6 divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
-          {authors.map((author) => (
+          {visibleAuthors.map((author) => (
             <li key={author.id} className="flex flex-wrap items-start justify-between gap-3 px-4 py-4">
               <div>
                 <p className="font-medium">{author.author_name}</p>
                 <p className="mt-1 text-sm text-ink-muted">{author.authors_biography || "No biography"}</p>
               </div>
-              <div className="flex gap-3 text-sm">
-                <button type="button" className="text-brand hover:underline" onClick={() => setEditing(author)}>
-                  Edit
-                </button>
-                <button type="button" className="text-danger hover:underline" onClick={() => setDeleting(author)}>
-                  Delete
-                </button>
-              </div>
+              {isStaff ? (
+                <div className="flex gap-3 text-sm">
+                  <button type="button" className="text-brand hover:underline" onClick={() => setEditing(author)}>
+                    Edit
+                  </button>
+                  <button type="button" className="text-danger hover:underline" onClick={() => setDeleting(author)}>
+                    Delete
+                  </button>
+                </div>
+              ) : null}
             </li>
           ))}
         </ul>
       )}
 
-      <AuthorFormModal
-        open={creating || !!editing}
-        author={editing}
-        onClose={() => {
-          setCreating(false);
-          setEditing(null);
-        }}
-        onSaved={async (message) => {
-          setCreating(false);
-          setEditing(null);
-          setSuccess(message);
-          await load();
-        }}
-      />
+      {isStaff ? (
+        <>
+          <AuthorFormModal
+            open={creating || !!editing}
+            author={editing}
+            onClose={() => {
+              setCreating(false);
+              setEditing(null);
+            }}
+            onSaved={async (message) => {
+              setCreating(false);
+              setEditing(null);
+              setSuccess(message);
+              await load();
+            }}
+          />
 
-      <ConfirmDialog
-        open={!!deleting}
-        title="Delete author"
-        message={`Delete “${deleting?.author_name}”? This fails if books still reference them.`}
-        confirmLabel="Delete"
-        danger
-        busy={busy}
-        onClose={() => setDeleting(null)}
-        onConfirm={async () => {
-          if (!deleting) return;
-          setBusy(true);
-          setError(null);
-          try {
-            await booksService.deleteAuthor(deleting.id);
-            setSuccess("Author deleted successfully");
-            setDeleting(null);
-            await load();
-          } catch (err) {
-            setError(isApiError(err) ? err.message : "Unable to delete author. They may still have books.");
-          } finally {
-            setBusy(false);
-          }
-        }}
-      />
+          <ConfirmDialog
+            open={!!deleting}
+            title="Delete author"
+            message={`Delete “${deleting?.author_name}”? This fails if books still reference them.`}
+            confirmLabel="Delete"
+            danger
+            busy={busy}
+            onClose={() => setDeleting(null)}
+            onConfirm={async () => {
+              if (!deleting) return;
+              setBusy(true);
+              setError(null);
+              try {
+                await booksService.deleteAuthor(deleting.id);
+                setSuccess("Author deleted successfully");
+                setDeleting(null);
+                await load();
+              } catch (err) {
+                setError(isApiError(err) ? err.message : "Unable to delete author. They may still have books.");
+              } finally {
+                setBusy(false);
+              }
+            }}
+          />
+        </>
+      ) : null}
     </main>
   );
 }

@@ -31,6 +31,8 @@ class AuthorWriteByAdminOnly(BasePermission):
         user = request.user
         if not user.is_authenticated:
             return False
-        if request.method in ["GET", "POST", "PUT", "PATCH", "DELETE"]:
+        if request.method == "GET":
+            return True
+        if request.method in ["POST", "PUT", "PATCH", "DELETE"]:
             return user.is_staff
         return False
