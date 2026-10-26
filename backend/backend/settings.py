@@ -26,9 +26,16 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 # Without this, DEBUG would always be True (non-empty string is truthy).
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
-# Add your production domain(s) here before deployment.
-
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("ALLOWED_HOSTS", "").split(",")
+    if host.strip()
+]
+ALLOWED_HOSTS += [
+    "localhost",
+    "127.0.0.1",
+    "library-management-system-jffv.onrender.com",
+]
 
 
 # Custom user model — must be set before the first migration
