@@ -27,7 +27,11 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 # Add your production domain(s) here before deployment.
-ALLOWED_HOSTS = ["localhost", "127.0.0.1"]
+ALLOWED_HOSTS = [
+    "localhost",
+    "127.0.0.1",
+    "library-management-system-iota-sage.vercel.app",
+]
 
 # Custom user model — must be set before the first migration
 AUTH_USER_MODEL = "users.User"
