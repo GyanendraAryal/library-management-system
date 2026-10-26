@@ -27,11 +27,9 @@ SECRET_KEY = os.getenv("SECRET_KEY")
 DEBUG = os.getenv("DEBUG", "False").lower() == "true"
 
 # Add your production domain(s) here before deployment.
-ALLOWED_HOSTS = [
-    "localhost",
-    "127.0.0.1",
-    "library-management-system-iota-sage.vercel.app",
-]
+
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost").split(",")
+
 
 # Custom user model — must be set before the first migration
 AUTH_USER_MODEL = "users.User"
@@ -63,6 +61,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",

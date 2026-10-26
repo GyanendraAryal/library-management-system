@@ -83,6 +83,10 @@ export default function Login() {
         if (!assigned) setFormError(error.message);
         return;
       }
+      if (error instanceof Error && error.name === "ApiConfigurationError") {
+        setFormError(error.message);
+        return;
+      }
       setFormError("Unable to reach the server. Please try again.");
     }
   };
