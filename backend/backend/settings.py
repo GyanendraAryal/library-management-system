@@ -48,7 +48,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework.authtoken",
     "corsheaders",
-    "django_filter",
+    "django_filters",
     "cloudinary_storage",
     "cloudinary",
     "drf_spectacular",  # OpenAPI / Swagger documentation
