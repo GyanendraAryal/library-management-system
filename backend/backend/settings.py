@@ -173,6 +173,7 @@ SPECTACULAR_SETTINGS = {
 # Do NOT use CORS_ALLOW_ALL_ORIGINS = True in production.
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:5173",
+    "https://library-management-system-iota-sage.vercel.app",
     # Add production frontend URL here when deploying
 ]
 # STORAGE CONFIGURATIONS
