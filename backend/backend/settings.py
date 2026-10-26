@@ -125,6 +125,8 @@ USE_TZ = True
 
 # Static files (CSS, JS, images served by Django)
 STATIC_URL = "/static/"
+STATIC_URL = "/static/"
+STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Media files (user-uploaded content, e.g. book cover images)
 # MEDIA_ROOT is required for ImageField to know where to save files.

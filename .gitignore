@@ -195,3 +195,4 @@ Project Requirement.pdf
 Comparison.pdf
 __pycache__/
 *.py[cod]
+staticfiles/
